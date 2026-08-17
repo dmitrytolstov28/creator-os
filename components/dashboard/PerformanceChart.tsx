@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -11,31 +12,61 @@ import {
 } from "recharts";
 
 import { Card } from "@/components/ui/card";
+import { supabase } from "@/lib/supabase";
 
-const data = [
-  { day: "Mon", views: 120000 },
-  { day: "Tue", views: 185000 },
-  { day: "Wed", views: 160000 },
-  { day: "Thu", views: 245000 },
-  { day: "Fri", views: 310000 },
-  { day: "Sat", views: 280000 },
-  { day: "Sun", views: 390000 },
-];
+type ChartData = {
+  day: string;
+  views: number;
+};
 
 export default function PerformanceChart() {
+  const [data, setData] = useState<ChartData[]>([]);
+
+  useEffect(() => {
+    async function loadChart() {
+      const { data: videos } = await supabase
+        .from("videos")
+        .select("date_posted, views")
+        .not("date_posted", "is", null)
+        .order("date_posted", { ascending: true });
+
+      if (!videos) return;
+
+      const grouped = new Map<string, number>();
+
+      videos.forEach((video) => {
+        if (!video.date_posted) return;
+
+        const day = new Date(video.date_posted).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+
+        grouped.set(day, (grouped.get(day) ?? 0) + (video.views ?? 0));
+      });
+
+      setData(
+        Array.from(grouped.entries()).map(([day, views]) => ({
+          day,
+          views,
+        }))
+      );
+    }
+
+    loadChart();
+  }, []);
+
   return (
     <Card className="mt-6 rounded-2xl border-zinc-800 bg-zinc-950 p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Performance</h2>
+          <h2 className="text-lg font-semibold text-white">
+            Performance
+          </h2>
 
           <p className="mt-1 text-sm text-zinc-500">
-            Views from the last seven days
+            Views over time
           </p>
-        </div>
-
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-400">
-          Last 7 days
         </div>
       </div>
 
@@ -43,48 +74,52 @@ export default function PerformanceChart() {
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data}>
             <defs>
-              <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient
+                id="viewsGradient"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
                 <stop
                   offset="5%"
-                  stopColor="currentColor"
+                  stopColor="#8b5cf6"
                   stopOpacity={0.35}
                 />
-
                 <stop
                   offset="95%"
-                  stopColor="currentColor"
+                  stopColor="#8b5cf6"
                   stopOpacity={0}
                 />
               </linearGradient>
             </defs>
 
             <CartesianGrid
+              stroke="#27272a"
               strokeDasharray="3 3"
               vertical={false}
-              stroke="#27272a"
             />
 
             <XAxis
               dataKey="day"
+              tick={{ fill: "#71717a", fontSize: 12 }}
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#71717a", fontSize: 12 }}
             />
 
             <YAxis
+              tick={{ fill: "#71717a", fontSize: 12 }}
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#71717a", fontSize: 12 }}
-              tickFormatter={(value) => `${value / 1000}K`}
+              tickFormatter={(v) => v.toLocaleString()}
             />
 
             <Tooltip
               contentStyle={{
-                backgroundColor: "#18181b",
+                background: "#18181b",
                 border: "1px solid #27272a",
                 borderRadius: "12px",
               }}
-              labelStyle={{ color: "#ffffff" }}
               formatter={(value) => [
                 Number(value).toLocaleString(),
                 "Views",

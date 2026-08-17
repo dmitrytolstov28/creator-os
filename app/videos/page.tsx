@@ -1,213 +1,849 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Search, Video } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
+import {
+  Plus,
+  Video,
+  PlayCircle,
+  BarChart3,
+  Eye,
+  Heart,
+  MessageCircle,
+  MoreHorizontal,
+} from "lucide-react";
 
 import AppShell from "@/components/layout/AppShell";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 
-type VideoEntry = {
-  id: number;
-  title: string;
+import {
+  getVideos,
+  Video as VideoType,
+  calculateTotals,
+} from "@/lib/analytics";
+
+
+
+
+
+function PlatformBadge({
+  platform,
+}: {
   platform: string;
-  views: string;
-  likes: string;
-  comments: string;
-};
+}) {
 
-const startingVideos: VideoEntry[] = [
-  {
-    id: 1,
-    title: "Gym POV",
-    platform: "TikTok",
-    views: "390000",
-    likes: "52000",
-    comments: "1200",
-  },
-  {
-    id: 2,
-    title: "Morning Routine",
-    platform: "Instagram",
-    views: "245000",
-    likes: "31000",
-    comments: "890",
-  },
-];
 
-export default function VideosPage() {
-  const [videos, setVideos] = useState(startingVideos);
-  const [showForm, setShowForm] = useState(false);
-  const [search, setSearch] = useState("");
+  const name = platform.toLowerCase();
 
-  const filteredVideos = videos.filter((video) =>
-    video.title.toLowerCase().includes(search.toLowerCase()),
-  );
 
-  function addVideo(formData: FormData) {
-    const title = String(formData.get("title") ?? "").trim();
-    const platform = String(formData.get("platform") ?? "").trim();
-    const views = String(formData.get("views") ?? "0");
-    const likes = String(formData.get("likes") ?? "0");
-    const comments = String(formData.get("comments") ?? "0");
 
-    if (!title || !platform) return;
 
-    setVideos((current) => [
-      {
-        id: Date.now(),
-        title,
-        platform,
-        views,
-        likes,
-        comments,
-      },
-      ...current,
-    ]);
+  if (
+    name.includes("youtube") ||
+    name.includes("yt")
+  ) {
 
-    setShowForm(false);
+    return (
+
+      <div
+        className="
+        flex
+        items-center
+        gap-2
+        rounded-lg
+        bg-black/70
+        px-3
+        py-1.5
+        text-sm
+        font-semibold
+        text-white
+        "
+      >
+
+        <span
+          className="
+          flex
+          h-5
+          w-5
+          items-center
+          justify-center
+          rounded-md
+          bg-red-500
+          text-[10px]
+          font-bold
+          "
+        >
+          ▶
+        </span>
+
+        YouTube
+
+      </div>
+
+    );
+
   }
 
-  return (
-    <AppShell>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold">Videos</h1>
 
-          <p className="mt-2 text-zinc-400">
-            Store and analyze all of your published content.
-          </p>
-        </div>
 
-        <Button
-          onClick={() => setShowForm((current) => !current)}
-          className="bg-violet-600 text-white hover:bg-violet-500"
+
+
+
+
+  if (
+    name.includes("tiktok") ||
+    name.includes("tik tok") ||
+    name.includes("tik")
+  ) {
+
+    return (
+
+      <div
+        className="
+        flex
+        items-center
+        gap-2
+        rounded-lg
+        bg-black/70
+        px-3
+        py-1.5
+        text-sm
+        font-semibold
+        text-white
+        "
+      >
+
+        <span
+          className="
+          flex
+          h-5
+          w-5
+          items-center
+          justify-center
+          rounded-md
+          bg-white
+          text-black
+          text-xs
+          font-bold
+          "
         >
-          <Plus size={18} />
-          Add Video
-        </Button>
+          ♪
+        </span>
+
+        TikTok
+
       </div>
 
-      {showForm && (
-        <Card className="mt-8 border-zinc-800 bg-zinc-900 p-6 text-white">
-          <h2 className="text-xl font-semibold">Add a new video</h2>
+    );
 
-          <form action={addVideo} className="mt-6 grid gap-4 md:grid-cols-2">
-            <Input
-              name="title"
-              placeholder="Video title"
-              required
-              className="border-zinc-700 bg-black text-white"
-            />
+  }
 
-            <Input
-              name="platform"
-              placeholder="Platform, such as TikTok"
-              required
-              className="border-zinc-700 bg-black text-white"
-            />
 
-            <Input
-              name="views"
-              type="number"
-              placeholder="Views"
-              className="border-zinc-700 bg-black text-white"
-            />
 
-            <Input
-              name="likes"
-              type="number"
-              placeholder="Likes"
-              className="border-zinc-700 bg-black text-white"
-            />
 
-            <Input
-              name="comments"
-              type="number"
-              placeholder="Comments"
-              className="border-zinc-700 bg-black text-white"
-            />
 
-            <div className="flex gap-3">
-              <Button
-                type="submit"
-                className="bg-violet-600 text-white hover:bg-violet-500"
-              >
-                Save Video
-              </Button>
 
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowForm(false)}
-                className="border-zinc-700 bg-transparent text-white"
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </Card>
-      )}
 
-      <div className="relative mt-8 max-w-md">
-        <Search
-          size={18}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
-        />
+  if (
+    name.includes("instagram") ||
+    name.includes("insta") ||
+    name.includes("ig")
+  ) {
 
-        <Input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search videos"
-          className="border-zinc-800 bg-zinc-950 pl-10 text-white"
-        />
+    return (
+
+      <div
+        className="
+        flex
+        items-center
+        gap-2
+        rounded-lg
+        bg-black/70
+        px-3
+        py-1.5
+        text-sm
+        font-semibold
+        text-white
+        "
+      >
+
+        <span
+          className="
+          flex
+          h-5
+          w-5
+          items-center
+          justify-center
+          rounded-md
+          bg-gradient-to-tr
+          from-yellow-400
+          via-pink-500
+          to-purple-600
+          text-xs
+          font-bold
+          "
+        >
+          ◎
+        </span>
+
+        Instagram
+
       </div>
 
-      <div className="mt-6 space-y-4">
-        {filteredVideos.map((video) => (
-          <Card
-            key={video.id}
-            className="flex items-center justify-between border-zinc-800 bg-zinc-900 p-5 text-white"
-          >
-            <div className="flex items-center gap-4">
-              <div className="rounded-xl bg-violet-500/15 p-3">
-                <Video size={20} className="text-violet-400" />
-              </div>
+    );
 
-              <div>
-                <h2 className="font-semibold">{video.title}</h2>
-                <p className="mt-1 text-sm text-zinc-500">
-                  {video.platform}
-                </p>
-              </div>
-            </div>
+  }
 
-            <div className="flex gap-10 text-right">
-              <Metric label="Views" value={video.views} />
-              <Metric label="Likes" value={video.likes} />
-              <Metric label="Comments" value={video.comments} />
-            </div>
-          </Card>
-        ))}
-      </div>
-    </AppShell>
+
+
+
+
+
+
+  return (
+
+    <div
+      className="
+      flex
+      items-center
+      gap-2
+      rounded-lg
+      bg-black/70
+      px-3
+      py-1.5
+      text-sm
+      font-semibold
+      text-white
+      "
+    >
+
+      <span>
+        •
+      </span>
+
+      {platform}
+
+    </div>
+
   );
+
+
 }
 
-function Metric({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+
+
+
+
+
+
+
+
+export default function VideosPage(){
+
+
+  const [videos,setVideos] =
+  useState<VideoType[]>([]);
+
+
+  const [loading,setLoading] =
+  useState(true);
+
+
+
+
+
+
+
+
+  useEffect(()=>{
+
+
+    async function loadVideos(){
+
+
+      try{
+
+
+        const data =
+        await getVideos();
+
+
+        setVideos(data);
+
+
+
+      }catch(error){
+
+
+        console.error(error);
+
+
+
+      }finally{
+
+
+        setLoading(false);
+
+
+      }
+
+
+    }
+
+
+
+    void loadVideos();
+
+
+
+  },[]);
+
+
+
+
+
+
+
+
+  const totals =
+  calculateTotals(videos);
+
+
+
+
+
+
+
+
+
   return (
-    <div>
-      <p className="font-semibold text-white">
-        {Number(value).toLocaleString()}
-      </p>
-      <p className="text-xs text-zinc-500">{label}</p>
-    </div>
+
+    <AppShell>
+
+
+      <div className="space-y-8">
+
+
+
+
+
+
+
+
+        <div className="
+        flex
+        items-start
+        justify-between
+        ">
+
+
+          <div>
+
+
+            <p className="
+            text-xs
+            uppercase
+            tracking-[0.3em]
+            text-emerald-400/70
+            ">
+
+              Content Creation
+
+            </p>
+
+
+
+            <h1 className="
+            mt-3
+            text-5xl
+            font-bold
+            text-white
+            ">
+
+              Video Library
+
+            </h1>
+
+
+
+            <p className="
+            mt-2
+            text-zinc-400
+            ">
+
+              Manage your published content and track performance.
+
+            </p>
+
+
+          </div>
+
+
+
+
+
+
+
+          <Link
+
+            href="/videos/new"
+
+            className="
+            flex
+            items-center
+            gap-2
+            rounded-xl
+            bg-emerald-400
+            px-5
+            py-3
+            font-semibold
+            text-black
+            hover:bg-emerald-300
+            "
+
+          >
+
+            <Plus size={18}/>
+
+            Add Published Video
+
+          </Link>
+
+
+
+        </div>
+
+
+
+
+
+
+
+
+
+        <div className="
+        grid
+        gap-4
+        md:grid-cols-3
+        ">
+
+
+          <div className="
+          rounded-2xl
+          border
+          border-emerald-400/20
+          bg-white/[0.04]
+          p-5
+          ">
+
+            <Video
+              size={22}
+              className="text-emerald-400"
+            />
+
+
+            <p className="mt-3 text-sm text-zinc-400">
+
+              Total Videos
+
+            </p>
+
+
+            <p className="
+            mt-2
+            text-3xl
+            font-bold
+            text-white
+            ">
+
+              {totals.videos}
+
+            </p>
+
+
+          </div>
+
+
+
+
+
+
+
+          <div className="
+          rounded-2xl
+          border
+          border-emerald-400/20
+          bg-white/[0.04]
+          p-5
+          ">
+
+
+            <PlayCircle
+              size={22}
+              className="text-emerald-400"
+            />
+
+
+            <p className="mt-3 text-sm text-zinc-400">
+
+              Published
+
+            </p>
+
+
+            <p className="
+            mt-2
+            text-3xl
+            font-bold
+            text-white
+            ">
+
+              {videos.length}
+
+            </p>
+
+
+          </div>
+
+
+
+
+
+
+
+          <div className="
+          rounded-2xl
+          border
+          border-emerald-400/20
+          bg-white/[0.04]
+          p-5
+          ">
+
+
+            <BarChart3
+              size={22}
+              className="text-emerald-400"
+            />
+
+
+            <p className="mt-3 text-sm text-zinc-400">
+
+              Total Views
+
+            </p>
+
+
+            <p className="
+            mt-2
+            text-3xl
+            font-bold
+            text-white
+            ">
+
+              {totals.views.toLocaleString()}
+
+            </p>
+
+
+          </div>
+
+
+        </div>
+
+
+
+
+
+
+
+
+
+        <div
+          className="
+          grid
+          gap-6
+          grid-cols-[repeat(auto-fill,minmax(240px,280px))]
+          justify-start
+          "
+        >
+
+
+
+
+
+          {
+            videos.map((video)=>(
+
+
+              <Link
+
+                key={video.id}
+
+                href={`/videos/${video.id}`}
+
+                className="
+                w-full
+                max-w-[280px]
+                rounded-2xl
+                border
+                border-emerald-400/20
+                bg-white/[0.04]
+                p-4
+                transition
+                hover:border-emerald-400/50
+                hover:-translate-y-1
+                "
+
+              >
+
+
+
+
+
+
+
+                <div className="
+                relative
+                overflow-hidden
+                rounded-xl
+                bg-black
+                ">
+
+
+
+
+
+                  {
+                    video.thumbnail_url ? (
+
+                      <img
+
+                        src={video.thumbnail_url}
+
+                        alt={video.title}
+
+                        className="
+                        aspect-[9/13]
+                        w-full
+                        object-cover
+                        "
+
+                      />
+
+
+                    ) : (
+
+
+                      <div className="
+                      flex
+                      aspect-[9/13]
+                      items-center
+                      justify-center
+                      text-zinc-600
+                      ">
+
+                        <Video size={45}/>
+
+                      </div>
+
+
+                    )
+
+                  }
+
+
+
+
+
+
+                  <div className="
+                  absolute
+                  left-3
+                  top-3
+                  ">
+
+                    <PlatformBadge
+                      platform={video.platform}
+                    />
+
+                  </div>
+
+
+
+
+
+
+                  <div className="
+                  absolute
+                  bottom-3
+                  left-3
+                  flex
+                  items-center
+                  gap-2
+                  rounded-lg
+                  bg-black/80
+                  px-3
+                  py-1.5
+                  text-sm
+                  font-semibold
+                  text-white
+                  ">
+
+                    <Eye size={15}/>
+
+                    {video.views.toLocaleString()}
+
+                  </div>
+
+
+
+
+
+                </div>
+
+
+
+
+
+
+
+
+
+                <div className="
+                mt-5
+                space-y-4
+                ">
+
+
+
+                  <h2 className="
+                  text-lg
+                  font-bold
+                  leading-tight
+                  text-white
+                  ">
+
+                    {video.title}
+
+                  </h2>
+
+
+
+
+
+
+
+                  <div className="
+                  space-y-2
+                  text-sm
+                  text-zinc-300
+                  ">
+
+
+
+                    <div className="flex items-center gap-3">
+
+                      <Eye size={16}/>
+
+                      {video.views.toLocaleString()} views
+
+                    </div>
+
+
+
+
+
+                    <div className="flex items-center gap-3">
+
+                      <Heart size={16}/>
+
+                      {video.likes.toLocaleString()} likes
+
+                    </div>
+
+
+
+
+
+                    <div className="flex items-center gap-3">
+
+                      <MessageCircle size={16}/>
+
+                      {video.comments.toLocaleString()} comments
+
+                    </div>
+
+
+
+                  </div>
+
+
+
+
+
+
+
+
+                  <div className="
+                  flex
+                  items-center
+                  justify-between
+                  border-t
+                  border-white/10
+                  pt-3
+                  text-sm
+                  text-zinc-500
+                  ">
+
+
+                    <span>
+
+                      {
+                        new Date(video.created_at)
+                        .toLocaleDateString()
+                      }
+
+                    </span>
+
+
+                    <MoreHorizontal size={18}/>
+
+
+                  </div>
+
+
+
+
+
+                </div>
+
+
+
+
+
+              </Link>
+
+
+            ))
+
+          }
+
+
+
+
+        </div>
+
+
+
+
+
+
+
+      </div>
+
+
+    </AppShell>
+
   );
+
 }
