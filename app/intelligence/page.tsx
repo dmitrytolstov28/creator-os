@@ -288,13 +288,47 @@ export default function IntelligencePage() {
           },
         );
 
-      const data =
-        (await response.json()) as AssistantResponse;
+      const responseText =
+        await response.text();
+
+      let data: AssistantResponse = {};
+
+      if (responseText.trim()) {
+        try {
+          data =
+            JSON.parse(
+              responseText,
+            ) as AssistantResponse;
+        } catch {
+          const contentType =
+            response.headers.get(
+              "content-type",
+            ) || "";
+
+          console.error(
+            "AI ASSISTANT NON-JSON RESPONSE:",
+            {
+              status:
+                response.status,
+              statusText:
+                response.statusText,
+              contentType,
+              responseText,
+            },
+          );
+
+          throw new Error(
+            response.ok
+              ? "CreatorOS returned an invalid server response."
+              : `AI Assistant request failed (${response.status}). Check the terminal or deployment logs for the server error.`,
+          );
+        }
+      }
 
       if (!response.ok) {
         throw new Error(
           data.error ||
-            "Could not analyze your account",
+            `Could not analyze your account (${response.status})`,
         );
       }
 
