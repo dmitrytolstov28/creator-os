@@ -257,7 +257,7 @@ async function fetchReelInsights(
   return result;
 }
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const supabaseUrl =
       process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -290,6 +290,61 @@ export async function POST() {
     );
 
     /*
+     * AUTH
+     * Verify the logged-in CreatorOS user from the bearer token.
+     */
+    const authorizationHeader =
+      request.headers.get("authorization");
+
+    const accessToken =
+      authorizationHeader?.startsWith("Bearer ")
+        ? authorizationHeader.slice(7).trim()
+        : null;
+
+    if (!accessToken) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "You must be logged in to sync Instagram.",
+        },
+        {
+          status: 401,
+        },
+      );
+    }
+
+    const {
+      data: userData,
+      error: userError,
+    } = await supabase.auth.getUser(
+      accessToken,
+    );
+
+    if (
+      userError ||
+      !userData.user
+    ) {
+      console.error(
+        "INSTAGRAM SYNC AUTH ERROR:",
+        userError,
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Your login session is invalid or has expired.",
+        },
+        {
+          status: 401,
+        },
+      );
+    }
+
+    const userId =
+      userData.user.id;
+
+    /*
      * STEP 1
      * Load Instagram connection.
      */
@@ -305,6 +360,10 @@ export async function POST() {
         username,
         access_token
         `,
+      )
+      .eq(
+        "user_id",
+        userId,
       )
       .order("created_at", {
         ascending: false,
@@ -426,6 +485,10 @@ export async function POST() {
         .from("videos")
         .select("id")
         .eq(
+          "user_id",
+          userId,
+        )
+        .eq(
           "post_url",
           video.permalink,
         )
@@ -511,6 +574,10 @@ export async function POST() {
           .eq(
             "id",
             existingVideo.id,
+          )
+          .eq(
+            "user_id",
+            userId,
           );
 
         if (updateError) {
@@ -536,6 +603,9 @@ export async function POST() {
        * INSERT NEW VIDEO
        */
       const newVideo = {
+        user_id:
+          userId,
+
         title:
           createTitle(
             video.caption,

@@ -3,7 +3,6 @@
 import {
   Eye,
   Play,
-  Folder,
   Heart,
   MessageCircle,
   TrendingUp,
@@ -11,7 +10,6 @@ import {
 } from "lucide-react";
 
 import ContentActions from "@/components/ContentActions";
-
 
 type ContentCardProps = {
   id: number;
@@ -26,8 +24,6 @@ type ContentCardProps = {
   onUpdated?: () => void;
 };
 
-
-
 export default function ContentCard({
   id,
   title,
@@ -40,8 +36,6 @@ export default function ContentCard({
   thumbnail,
   onUpdated,
 }: ContentCardProps) {
-
-
   const engagement =
     views && views > 0
       ? (
@@ -52,10 +46,7 @@ export default function ContentCard({
         ).toFixed(1)
       : "0";
 
-
-
   return (
-
     <div
       className="
         group
@@ -72,8 +63,6 @@ export default function ContentCard({
         hover:shadow-[0_0_40px_rgba(0,255,136,0.18)]
       "
     >
-
-
       {/* Background glow */}
 
       <div
@@ -90,9 +79,6 @@ export default function ContentCard({
         "
       />
 
-
-
-
       {/* Preview */}
 
       <div
@@ -106,10 +92,7 @@ export default function ContentCard({
           bg-black/40
         "
       >
-
-
         {thumbnail ? (
-
           <img
             src={thumbnail}
             alt={title}
@@ -123,18 +106,12 @@ export default function ContentCard({
               group-hover:scale-105
             "
           />
-
         ) : (
-
           <Play
             size={42}
             className="text-emerald-400/50"
           />
-
         )}
-
-
-
 
         <div
           className="
@@ -145,10 +122,6 @@ export default function ContentCard({
             to-transparent
           "
         />
-
-
-
-
 
         <div
           className="
@@ -169,7 +142,6 @@ export default function ContentCard({
             backdrop-blur-xl
           "
         >
-
           <span
             className="
               h-2
@@ -181,56 +153,35 @@ export default function ContentCard({
           />
 
           ACTIVE NODE
-
         </div>
 
-
-
-
-
         <div className="absolute right-3 top-3">
-
           <ContentActions
             video={{
               id,
               title,
-              platform: platform ?? "",
+              platform:
+                platform ?? "",
               views: views ?? 0,
               likes: likes ?? 0,
-              comments: comments ?? 0,
+              comments:
+                comments ?? 0,
             }}
-            onUpdated={onUpdated}
+            onUpdated={
+              onUpdated
+            }
           />
-
         </div>
-
-
       </div>
-
-
-
-
-
 
       {/* Data */}
 
       <div className="relative p-5">
-
-
         <div className="flex justify-between gap-3">
-
-
           <div>
-
-            <h3
-              className="
-                font-semibold
-                text-white
-              "
-            >
+            <h3 className="font-semibold text-white">
               {title}
             </h3>
-
 
             <p
               className="
@@ -243,46 +194,17 @@ export default function ContentCard({
             >
               {type ?? "Video"}
             </p>
-
-
           </div>
 
-
-
-
-          {type === "Project" ? (
-
-            <Folder
-              size={18}
-              className="text-emerald-400"
-            />
-
-          ) : (
-
-            <Play
-              size={18}
-              className="text-emerald-400"
-            />
-
-          )}
-
-
+          <Play
+            size={18}
+            className="text-emerald-400"
+          />
         </div>
 
-
-
-
-
-
-
         <div className="mt-5 space-y-3 text-sm">
-
-
-
           {platform && (
-
             <div className="flex justify-between">
-
               <span className="text-zinc-500">
                 Platform
               </span>
@@ -290,15 +212,8 @@ export default function ContentCard({
               <span className="text-white">
                 {platform}
               </span>
-
             </div>
-
           )}
-
-
-
-
-
 
           {[
             {
@@ -316,57 +231,43 @@ export default function ContentCard({
               label: "Comments",
               value: comments,
             },
-
           ].map((item) => {
+            const Icon =
+              item.icon;
 
-            const Icon = item.icon;
-
-
-            return item.value !== undefined && (
-
-              <div
-                key={item.label}
-                className="flex justify-between"
-              >
-
-                <span
-                  className="
-                    flex
-                    items-center
-                    gap-2
-                    text-zinc-400
-                  "
+            return (
+              item.value !==
+                undefined && (
+                <div
+                  key={
+                    item.label
+                  }
+                  className="flex justify-between"
                 >
+                  <span
+                    className="
+                      flex
+                      items-center
+                      gap-2
+                      text-zinc-400
+                    "
+                  >
+                    <Icon
+                      size={15}
+                    />
 
-                  <Icon size={15}/>
+                    {item.label}
+                  </span>
 
-                  {item.label}
-
-                </span>
-
-
-                <span className="text-white">
-
-                  {item.value.toLocaleString()}
-
-                </span>
-
-
-              </div>
-
+                  <span className="text-white">
+                    {item.value.toLocaleString()}
+                  </span>
+                </div>
+              )
             );
-
           })}
 
-
-
-
-
-
-
           <div className="flex justify-between">
-
-
             <span
               className="
                 flex
@@ -375,32 +276,18 @@ export default function ContentCard({
                 text-zinc-400
               "
             >
-
-              <TrendingUp size={15}/>
+              <TrendingUp
+                size={15}
+              />
 
               Engagement
-
             </span>
-
 
             <span className="text-emerald-400">
-
               {engagement}%
-
             </span>
-
-
           </div>
-
-
-
         </div>
-
-
-
-
-
-
 
         <div
           className="
@@ -415,19 +302,11 @@ export default function ContentCard({
             text-emerald-400
           "
         >
-
-          <Activity size={14}/>
+          <Activity size={14} />
 
           SYSTEM TRACKING ACTIVE
-
         </div>
-
-
       </div>
-
-
     </div>
-
   );
-
 }

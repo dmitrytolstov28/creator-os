@@ -7,8 +7,7 @@ import {
   LayoutDashboard,
   Calendar,
   Video,
-  FileText,
-  FolderOpen,
+  Lightbulb,
   BarChart3,
   Brain,
   Settings,
@@ -39,7 +38,7 @@ const sections = [
   },
 
   {
-    title: "CONTENT CREATION",
+    title: "CONTENT",
     items: [
       {
         name: "Videos",
@@ -47,14 +46,9 @@ const sections = [
         icon: Video,
       },
       {
-        name: "Drafts",
-        href: "/drafts",
-        icon: FileText,
-      },
-      {
-        name: "Projects",
-        href: "/projects",
-        icon: FolderOpen,
+        name: "Ideas",
+        href: "/ideas",
+        icon: Lightbulb,
       },
     ],
   },
@@ -97,15 +91,7 @@ export default function Sidebar() {
           Creator<span className="text-emerald-400">OS</span>
         </h1>
 
-        <p
-          className="
-            mt-1
-            text-xs
-            uppercase
-            tracking-[0.22em]
-            text-emerald-400/70
-          "
-        >
+        <p className="mt-1 text-xs uppercase tracking-[0.22em] text-emerald-400/70">
           Creator Command Center
         </p>
       </div>
@@ -113,17 +99,7 @@ export default function Sidebar() {
       <nav className="flex-1 space-y-5">
         {sections.map((section) => (
           <div key={section.title}>
-            <p
-              className="
-                mb-2
-                px-3
-                text-[10px]
-                font-semibold
-                uppercase
-                tracking-[0.28em]
-                text-zinc-600
-              "
-            >
+            <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-zinc-600">
               {section.title}
             </p>
 
@@ -131,7 +107,10 @@ export default function Sidebar() {
               {section.items.map((item) => {
                 const Icon = item.icon;
 
-                const active = pathname === item.href;
+                const active =
+                  item.href === "/"
+                    ? pathname === "/"
+                    : pathname.startsWith(item.href);
 
                 return (
                   <Link
@@ -171,15 +150,7 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div
-        className="
-          rounded-2xl
-          border
-          border-emerald-400/20
-          bg-white/[0.03]
-          p-3
-        "
-      >
+      <div className="rounded-2xl border border-emerald-400/20 bg-white/[0.03] p-3">
         <div className="flex items-center gap-2">
           <Activity
             size={16}

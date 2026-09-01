@@ -1,7 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
   Plus,
@@ -22,12 +26,19 @@ import {
   calculateTotals,
 } from "@/lib/analytics";
 
+type LibraryVideo =
+  VideoType & {
+    date_posted?: string | null;
+    created_at?: string;
+  };
+
 function PlatformBadge({
   platform,
 }: {
   platform: string;
 }) {
-  const name = platform.toLowerCase();
+  const name =
+    platform.toLowerCase();
 
   if (
     name.includes("youtube") ||
@@ -83,9 +94,62 @@ function PlatformBadge({
   );
 }
 
+function getVideoDate(
+  video: LibraryVideo,
+) {
+  return (
+    video.date_posted ||
+    video.created_at ||
+    ""
+  );
+}
+
+function formatPostedDate(
+  value?: string | null,
+) {
+  if (!value) {
+    return "Unknown date";
+  }
+
+  /*
+   * date_posted is stored as YYYY-MM-DD.
+   * Adding T00:00:00 prevents timezone
+   * conversion from moving the date
+   * backward by one day.
+   */
+  const date = new Date(
+    `${value.slice(
+      0,
+      10,
+    )}T00:00:00`,
+  );
+
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
+    return value;
+  }
+
+  return date.toLocaleDateString(
+    undefined,
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    },
+  );
+}
+
 export default function VideosPage() {
-  const [videos, setVideos] =
-    useState<VideoType[]>([]);
+  const [
+    videos,
+    setVideos,
+  ] =
+    useState<
+      LibraryVideo[]
+    >([]);
 
   const [loading, setLoading] =
     useState(true);
@@ -93,7 +157,8 @@ export default function VideosPage() {
   useEffect(() => {
     async function loadVideos() {
       try {
-        const data = await getVideos();
+        const data =
+          await getVideos();
 
         setVideos(data);
       } catch (error) {
@@ -106,7 +171,46 @@ export default function VideosPage() {
     void loadVideos();
   }, []);
 
-  const totals = calculateTotals(videos);
+  /*
+   * Instagram's real publishing date
+   * controls the library order.
+   *
+   * Newest published video appears first.
+   */
+  const sortedVideos =
+    useMemo(() => {
+      return [...videos].sort(
+        (a, b) => {
+          const aDate =
+            getVideoDate(a);
+
+          const bDate =
+            getVideoDate(b);
+
+          if (
+            !aDate &&
+            !bDate
+          ) {
+            return 0;
+          }
+
+          if (!aDate) {
+            return 1;
+          }
+
+          if (!bDate) {
+            return -1;
+          }
+
+          return bDate.localeCompare(
+            aDate,
+          );
+        },
+      );
+    }, [videos]);
+
+  const totals =
+    calculateTotals(videos);
 
   return (
     <AppShell>
@@ -180,7 +284,9 @@ export default function VideosPage() {
             </p>
 
             <p className="mt-1.5 text-2xl font-bold text-white">
-              {videos.length}
+              {
+                sortedVideos.length
+              }
             </p>
           </div>
 
@@ -206,6 +312,11 @@ export default function VideosPage() {
           <div className="py-10 text-zinc-500">
             Loading videos...
           </div>
+        ) : sortedVideos.length ===
+          0 ? (
+          <div className="py-10 text-zinc-500">
+            No videos found.
+          </div>
         ) : (
           <div
             className="
@@ -215,89 +326,129 @@ export default function VideosPage() {
               2xl:grid-cols-6
             "
           >
-            {videos.map((video) => (
-              <Link
-                key={video.id}
-                href={`/videos/${video.id}`}
-                className="
-                  min-w-0
-                  rounded-2xl
-                  border
-                  border-emerald-400/20
-                  bg-white/[0.04]
-                  p-3
-                  transition
-                  hover:-translate-y-1
-                  hover:border-emerald-400/50
-                "
-              >
-                {/* Thumbnail */}
+            {sortedVideos.map(
+              (video) => (
+                <Link
+                  key={
+                    video.id
+                  }
+                  href={`/videos/${video.id}`}
+                  className="
+                    min-w-0
+                    rounded-2xl
+                    border
+                    border-emerald-400/20
+                    bg-white/[0.04]
+                    p-3
+                    transition
+                    hover:-translate-y-1
+                    hover:border-emerald-400/50
+                  "
+                >
+                  {/* Thumbnail */}
 
-                <div className="relative overflow-hidden rounded-xl bg-black">
-                  {video.thumbnail_url ? (
-                    <img
-                      src={video.thumbnail_url}
-                      alt={video.title}
-                      className="aspect-[9/13] w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex aspect-[9/13] items-center justify-center text-zinc-600">
-                      <Video size={40} />
-                    </div>
-                  )}
+                  <div className="relative overflow-hidden rounded-xl bg-black">
+                    {video.thumbnail_url ? (
+                      <img
+                        src={
+                          video.thumbnail_url
+                        }
+                        alt={
+                          video.title
+                        }
+                        className="aspect-[9/13] w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex aspect-[9/13] items-center justify-center text-zinc-600">
+                        <Video
+                          size={
+                            40
+                          }
+                        />
+                      </div>
+                    )}
 
-                  <div className="absolute left-2.5 top-2.5">
-                    <PlatformBadge
-                      platform={video.platform}
-                    />
-                  </div>
-
-                  <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 rounded-lg bg-black/80 px-2.5 py-1.5 text-xs font-semibold text-white">
-                    <Eye size={14} />
-
-                    {video.views.toLocaleString()}
-                  </div>
-                </div>
-
-                {/* Card Information */}
-
-                <div className="mt-4 space-y-3">
-                  <h2 className="text-base font-bold leading-tight text-white">
-                    {video.title}
-                  </h2>
-
-                  <div className="space-y-1.5 text-xs text-zinc-300">
-                    <div className="flex items-center gap-2">
-                      <Eye size={15} />
-
-                      {video.views.toLocaleString()} views
+                    <div className="absolute left-2.5 top-2.5">
+                      <PlatformBadge
+                        platform={
+                          video.platform
+                        }
+                      />
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <Heart size={15} />
+                    <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 rounded-lg bg-black/80 px-2.5 py-1.5 text-xs font-semibold text-white">
+                      <Eye
+                        size={
+                          14
+                        }
+                      />
 
-                      {video.likes.toLocaleString()} likes
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <MessageCircle size={15} />
-
-                      {video.comments.toLocaleString()} comments
+                      {video.views.toLocaleString()}
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between border-t border-white/10 pt-2.5 text-xs text-zinc-500">
-                    <span>
-                      {new Date(
-                        video.created_at,
-                      ).toLocaleDateString()}
-                    </span>
+                  {/* Card Information */}
 
-                    <MoreHorizontal size={17} />
+                  <div className="mt-4 space-y-3">
+                    <h2 className="text-base font-bold leading-tight text-white">
+                      {
+                        video.title
+                      }
+                    </h2>
+
+                    <div className="space-y-1.5 text-xs text-zinc-300">
+                      <div className="flex items-center gap-2">
+                        <Eye
+                          size={
+                            15
+                          }
+                        />
+
+                        {video.views.toLocaleString()}{" "}
+                        views
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Heart
+                          size={
+                            15
+                          }
+                        />
+
+                        {video.likes.toLocaleString()}{" "}
+                        likes
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <MessageCircle
+                          size={
+                            15
+                          }
+                        />
+
+                        {video.comments.toLocaleString()}{" "}
+                        comments
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between border-t border-white/10 pt-2.5 text-xs text-zinc-500">
+                      <span>
+                        Posted{" "}
+                        {formatPostedDate(
+                          video.date_posted,
+                        )}
+                      </span>
+
+                      <MoreHorizontal
+                        size={
+                          17
+                        }
+                      />
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ),
+            )}
           </div>
         )}
       </div>
