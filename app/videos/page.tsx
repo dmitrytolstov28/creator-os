@@ -111,12 +111,6 @@ function formatPostedDate(
     return "Unknown date";
   }
 
-  /*
-   * date_posted is stored as YYYY-MM-DD.
-   * Adding T00:00:00 prevents timezone
-   * conversion from moving the date
-   * backward by one day.
-   */
   const date = new Date(
     `${value.slice(
       0,
@@ -142,6 +136,74 @@ function formatPostedDate(
   );
 }
 
+function VideoThumbnail({
+  video,
+}: {
+  video: LibraryVideo;
+}) {
+  const [
+    imageFailed,
+    setImageFailed,
+  ] = useState(false);
+
+  const hasThumbnail =
+    Boolean(
+      video.thumbnail_url,
+    ) &&
+    !imageFailed;
+
+  return (
+    <div className="relative overflow-hidden rounded-xl bg-black">
+      {hasThumbnail ? (
+        <img
+          src={
+            video.thumbnail_url ??
+            ""
+          }
+          alt={
+            video.title
+          }
+          className="aspect-[9/13] w-full object-cover"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => {
+            setImageFailed(true);
+          }}
+        />
+      ) : (
+        <div className="flex aspect-[9/13] items-center justify-center bg-gradient-to-b from-zinc-950 to-black">
+          <div className="flex flex-col items-center gap-3 text-zinc-600">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-400/5">
+              <Video
+                size={28}
+                className="text-emerald-400/60"
+              />
+            </div>
+
+            <span className="text-xs text-zinc-500">
+              Preview unavailable
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div className="absolute left-2.5 top-2.5">
+        <PlatformBadge
+          platform={
+            video.platform
+          }
+        />
+      </div>
+
+      <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 rounded-lg bg-black/80 px-2.5 py-1.5 text-xs font-semibold text-white">
+        <Eye size={14} />
+
+        {video.views.toLocaleString()}
+      </div>
+    </div>
+  );
+}
+
 export default function VideosPage() {
   const [
     videos,
@@ -151,7 +213,10 @@ export default function VideosPage() {
       LibraryVideo[]
     >([]);
 
-  const [loading, setLoading] =
+  const [
+    loading,
+    setLoading,
+  ] =
     useState(true);
 
   useEffect(() => {
@@ -171,12 +236,6 @@ export default function VideosPage() {
     void loadVideos();
   }, []);
 
-  /*
-   * Instagram's real publishing date
-   * controls the library order.
-   *
-   * Newest published video appears first.
-   */
   const sortedVideos =
     useMemo(() => {
       return [...videos].sort(
@@ -215,8 +274,6 @@ export default function VideosPage() {
   return (
     <AppShell>
       <div className="space-y-7">
-        {/* Page Header */}
-
         <div className="flex items-start justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-emerald-400/70">
@@ -254,8 +311,6 @@ export default function VideosPage() {
             Add Published Video
           </Link>
         </div>
-
-        {/* Summary Stats */}
 
         <div className="grid gap-4 md:grid-cols-3">
           <div className="rounded-2xl border border-emerald-400/20 bg-white/[0.04] p-4">
@@ -306,8 +361,6 @@ export default function VideosPage() {
           </div>
         </div>
 
-        {/* Video Grid */}
-
         {loading ? (
           <div className="py-10 text-zinc-500">
             Loading videos...
@@ -345,49 +398,11 @@ export default function VideosPage() {
                     hover:border-emerald-400/50
                   "
                 >
-                  {/* Thumbnail */}
-
-                  <div className="relative overflow-hidden rounded-xl bg-black">
-                    {video.thumbnail_url ? (
-                      <img
-                        src={
-                          video.thumbnail_url
-                        }
-                        alt={
-                          video.title
-                        }
-                        className="aspect-[9/13] w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex aspect-[9/13] items-center justify-center text-zinc-600">
-                        <Video
-                          size={
-                            40
-                          }
-                        />
-                      </div>
-                    )}
-
-                    <div className="absolute left-2.5 top-2.5">
-                      <PlatformBadge
-                        platform={
-                          video.platform
-                        }
-                      />
-                    </div>
-
-                    <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 rounded-lg bg-black/80 px-2.5 py-1.5 text-xs font-semibold text-white">
-                      <Eye
-                        size={
-                          14
-                        }
-                      />
-
-                      {video.views.toLocaleString()}
-                    </div>
-                  </div>
-
-                  {/* Card Information */}
+                  <VideoThumbnail
+                    video={
+                      video
+                    }
+                  />
 
                   <div className="mt-4 space-y-3">
                     <h2 className="text-base font-bold leading-tight text-white">
