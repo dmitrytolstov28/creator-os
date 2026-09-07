@@ -4,6 +4,7 @@ import {
   FormEvent,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -85,6 +86,69 @@ const suggestedQuestions = [
   },
 ];
 
+
+const loadingStages = [
+  {
+    min: 0,
+    max: 14,
+    label: "Preparing your request",
+    detail:
+      "Getting the AI Assistant ready for your question.",
+  },
+  {
+    min: 15,
+    max: 31,
+    label: "Loading account data",
+    detail:
+      "Gathering the Instagram performance data tied to your CreatorOS account.",
+  },
+  {
+    min: 32,
+    max: 52,
+    label: "Analyzing your content",
+    detail:
+      "Comparing views, engagement, saves, shares, and recent performance.",
+  },
+  {
+    min: 53,
+    max: 69,
+    label: "Identifying patterns",
+    detail:
+      "Looking for repeated signals across your strongest and weakest posts.",
+  },
+  {
+    min: 70,
+    max: 84,
+    label: "Thinking through the answer",
+    detail:
+      "Turning the strongest evidence into a useful explanation.",
+  },
+  {
+    min: 85,
+    max: 98,
+    label: "Generating response",
+    detail:
+      "Writing a concise answer based on your real account data.",
+  },
+  {
+    min: 99,
+    max: 100,
+    label: "Finalizing response",
+    detail:
+      "Finishing the analysis and preparing it for display.",
+  },
+];
+
+function getLoadingStage(progress: number) {
+  return (
+    loadingStages.find(
+      (stage) =>
+        progress >= stage.min &&
+        progress <= stage.max,
+    ) ?? loadingStages[loadingStages.length - 1]
+  );
+}
+
 function safeNumber(value: unknown) {
   const number = Number(value);
 
@@ -125,6 +189,16 @@ export default function IntelligencePage() {
     useState(false);
 
   const [
+    responseProgress,
+    setResponseProgress,
+  ] = useState(0);
+
+  const progressIntervalRef =
+    useRef<ReturnType<typeof setInterval> | null>(
+      null,
+    );
+
+  const [
     analyzedVideos,
     setAnalyzedVideos,
   ] = useState(0);
@@ -156,6 +230,78 @@ export default function IntelligencePage() {
   useEffect(() => {
     void loadVideos();
   }, []);
+
+  useEffect(() => {
+    if (!asking) {
+      if (progressIntervalRef.current) {
+        clearInterval(
+          progressIntervalRef.current,
+        );
+
+        progressIntervalRef.current =
+          null;
+      }
+
+      return;
+    }
+
+    if (progressIntervalRef.current) {
+      clearInterval(
+        progressIntervalRef.current,
+      );
+    }
+
+    progressIntervalRef.current =
+      setInterval(() => {
+        setResponseProgress(
+          (current) => {
+            if (current >= 98) {
+              return 98;
+            }
+
+            let increment = 1;
+
+            if (current < 20) {
+              increment =
+                Math.random() < 0.45 ? 2 : 1;
+            } else if (current < 55) {
+              increment =
+                Math.random() < 0.25 ? 2 : 1;
+            } else if (current < 80) {
+              increment =
+                Math.random() < 0.18 ? 2 : 1;
+            } else if (current < 92) {
+              increment =
+                Math.random() < 0.08 ? 2 : 1;
+            } else {
+              increment =
+                Math.random() < 0.6 ? 0 : 1;
+            }
+
+            return Math.min(
+              98,
+              current + increment,
+            );
+          },
+        );
+      }, 700);
+
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(
+          progressIntervalRef.current,
+        );
+
+        progressIntervalRef.current =
+          null;
+      }
+    };
+  }, [asking]);
+
+  const loadingStage =
+    getLoadingStage(
+      responseProgress,
+    );
 
   const snapshot = useMemo(() => {
     const totals =
@@ -244,6 +390,8 @@ export default function IntelligencePage() {
 
     setAnalysis(null);
 
+    setResponseProgress(4);
+
     setAsking(true);
 
     try {
@@ -268,6 +416,11 @@ export default function IntelligencePage() {
         );
       }
 
+      setResponseProgress(
+        (current) =>
+          Math.max(current, 18),
+      );
+
       const response =
         await fetch(
           "/api/ai-assistant/chat",
@@ -288,8 +441,18 @@ export default function IntelligencePage() {
           },
         );
 
+      setResponseProgress(
+        (current) =>
+          Math.max(current, 34),
+      );
+
       const responseText =
         await response.text();
+
+      setResponseProgress(
+        (current) =>
+          Math.max(current, 96),
+      );
 
       let data: AssistantResponse = {};
 
@@ -338,6 +501,8 @@ export default function IntelligencePage() {
         );
       }
 
+      setResponseProgress(100);
+
       setAnalysis(
         data.analysis,
       );
@@ -361,6 +526,14 @@ export default function IntelligencePage() {
 
       setAnalysis(null);
     } finally {
+      await new Promise(
+        (resolve) =>
+          window.setTimeout(
+            resolve,
+            280,
+          ),
+      );
+
       setAsking(false);
     }
   }
@@ -682,18 +855,103 @@ export default function IntelligencePage() {
                         </div>
 
                         {asking ? (
-                          <div className="mt-3">
-                            <p className="text-sm text-zinc-400">
-                              Analyzing
-                              your account...
-                            </p>
+                          <div className="mt-4 space-y-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="relative flex h-2.5 w-2.5">
+                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
+                                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                                  </span>
 
-                            <p className="mt-1 text-xs text-zinc-600">
-                              Finding the
-                              most important
-                              patterns in
-                              your content.
-                            </p>
+                                  <p className="text-sm font-medium text-emerald-300">
+                                    {loadingStage.label}
+                                  </p>
+                                </div>
+
+                                <p className="mt-1.5 max-w-2xl text-xs leading-5 text-zinc-500">
+                                  {loadingStage.detail}
+                                </p>
+                              </div>
+
+                              <div className="shrink-0 text-right">
+                                <p className="text-2xl font-bold tabular-nums text-emerald-300">
+                                  {responseProgress}%
+                                </p>
+
+                                <p className="mt-0.5 text-[10px] uppercase tracking-[0.18em] text-zinc-600">
+                                  Progress
+                                </p>
+                              </div>
+                            </div>
+
+                            <div>
+                              <div className="h-2.5 overflow-hidden rounded-full border border-emerald-400/15 bg-black/40">
+                                <div
+                                  className="relative h-full rounded-full bg-emerald-400 transition-[width] duration-700 ease-out"
+                                  style={{
+                                    width: `${responseProgress}%`,
+                                  }}
+                                >
+                                  <div className="absolute inset-0 animate-pulse bg-white/15" />
+                                </div>
+                              </div>
+
+                              <div className="mt-2 flex items-center justify-between text-[10px] text-zinc-600">
+                                <span>
+                                  CreatorOS is working through your account data
+                                </span>
+
+                                <span>
+                                  {responseProgress < 99
+                                    ? "Please keep this page open"
+                                    : "Almost done"}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="grid gap-2 sm:grid-cols-3">
+                              {[
+                                {
+                                  label: "Account data",
+                                  done:
+                                    responseProgress >= 18,
+                                },
+                                {
+                                  label: "Content analysis",
+                                  done:
+                                    responseProgress >= 55,
+                                },
+                                {
+                                  label: "AI response",
+                                  done:
+                                    responseProgress >= 99,
+                                },
+                              ].map((step) => (
+                                <div
+                                  key={step.label}
+                                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-[11px] transition ${
+                                    step.done
+                                      ? "border-emerald-400/20 bg-emerald-400/[0.05] text-emerald-300"
+                                      : "border-white/[0.06] bg-black/20 text-zinc-600"
+                                  }`}
+                                >
+                                  {step.done ? (
+                                    <CheckCircle2
+                                      size={13}
+                                      className="text-emerald-400"
+                                    />
+                                  ) : (
+                                    <Loader2
+                                      size={13}
+                                      className="animate-spin text-zinc-600"
+                                    />
+                                  )}
+
+                                  {step.label}
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         ) : analysis ? (
                           <div className="mt-4 space-y-5">
