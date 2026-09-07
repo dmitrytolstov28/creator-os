@@ -75,7 +75,8 @@ function readState(
     if (
       !parsed.userId ||
       !parsed.expiresAt ||
-      parsed.expiresAt < Date.now()
+      parsed.expiresAt <
+        Date.now()
     ) {
       return null;
     }
@@ -89,22 +90,48 @@ function readState(
   }
 }
 
+type MetaPage = {
+  id?: string;
+  name?: string;
+  access_token?: string;
+  instagram_business_account?: {
+    id?: string;
+  };
+};
+
+type MetaPagesResponse = {
+  data?: MetaPage[];
+  error?: {
+    message?: string;
+    type?: string;
+    code?: number;
+  };
+};
+
 export async function GET(
   request: NextRequest,
 ) {
   try {
     const {
       searchParams,
-    } = new URL(request.url);
+    } = new URL(
+      request.url,
+    );
 
     const code =
-      searchParams.get("code");
+      searchParams.get(
+        "code",
+      );
 
     const state =
-      searchParams.get("state");
+      searchParams.get(
+        "state",
+      );
 
     const error =
-      searchParams.get("error");
+      searchParams.get(
+        "error",
+      );
 
     const errorDescription =
       searchParams.get(
@@ -156,10 +183,8 @@ export async function GET(
       process.env.META_APP_SECRET;
 
     const redirectUri =
-      process.env.META_REDIRECT_URI;
-
-    const pageId =
-      process.env.META_PAGE_ID;
+      process.env
+        .META_REDIRECT_URI;
 
     const supabaseUrl =
       process.env
@@ -178,7 +203,6 @@ export async function GET(
       !appId ||
       !appSecret ||
       !redirectUri ||
-      !pageId ||
       !supabaseUrl ||
       !supabaseServiceRoleKey ||
       !stateSecret
@@ -194,9 +218,6 @@ export async function GET(
 
           META_REDIRECT_URI:
             !!redirectUri,
-
-          META_PAGE_ID:
-            !!pageId,
 
           NEXT_PUBLIC_SUPABASE_URL:
             !!supabaseUrl,
@@ -349,44 +370,45 @@ export async function GET(
       permissionsData,
     );
 
-    const pageUrl =
+    const pagesUrl =
       new URL(
-        `https://graph.facebook.com/${GRAPH_VERSION}/${pageId}`,
+        `https://graph.facebook.com/${GRAPH_VERSION}/me/accounts`,
       );
 
-    pageUrl.searchParams.set(
+    pagesUrl.searchParams.set(
       "fields",
       "id,name,access_token,instagram_business_account",
     );
 
-    pageUrl.searchParams.set(
+    pagesUrl.searchParams.set(
       "access_token",
       userAccessToken,
     );
 
-    const pageResponse =
+    const pagesResponse =
       await fetch(
-        pageUrl.toString(),
+        pagesUrl.toString(),
         {
           cache: "no-store",
         },
       );
 
-    const pageData =
-      await pageResponse.json();
+    const pagesData =
+      (await pagesResponse.json()) as
+        MetaPagesResponse;
 
     console.log(
-      "META PAGE:",
-      pageData,
+      "META PAGES:",
+      pagesData,
     );
 
     if (
-      !pageResponse.ok ||
-      pageData.error
+      !pagesResponse.ok ||
+      pagesData.error
     ) {
       console.error(
-        "Meta could not access specific Page:",
-        pageData,
+        "Meta could not retrieve user Pages:",
+        pagesData,
       );
 
       return NextResponse.redirect(
@@ -396,6 +418,50 @@ export async function GET(
         ),
       );
     }
+
+    const pageData =
+      Array.isArray(
+        pagesData.data,
+      )
+        ? pagesData.data.find(
+            (
+              page,
+            ) =>
+              !!page
+                .instagram_business_account
+                ?.id &&
+              !!page.access_token,
+          )
+        : undefined;
+
+    if (!pageData) {
+      console.error(
+        "No Facebook Page with a linked Instagram professional account was found:",
+        pagesData,
+      );
+
+      return NextResponse.redirect(
+        new URL(
+          "/settings?error=no_linked_instagram_account",
+          request.url,
+        ),
+      );
+    }
+
+    console.log(
+      "SELECTED META PAGE:",
+      {
+        id:
+          pageData.id,
+
+        name:
+          pageData.name,
+
+        instagram_business_account:
+          pageData
+            .instagram_business_account,
+      },
+    );
 
     const pageAccessToken =
       pageData.access_token;
@@ -419,7 +485,8 @@ export async function GET(
     }
 
     if (
-      !instagramBusinessAccount?.id
+      !instagramBusinessAccount
+        ?.id
     ) {
       console.error(
         "Facebook Page has no linked Instagram professional account:",
@@ -435,7 +502,8 @@ export async function GET(
     }
 
     const instagramUserId =
-      instagramBusinessAccount.id as string;
+      instagramBusinessAccount
+        .id;
 
     const instagramUrl =
       new URL(
@@ -528,8 +596,11 @@ export async function GET(
     };
 
     const {
-      data: existingConnection,
-      error: existingConnectionError,
+      data:
+        existingConnection,
+
+      error:
+        existingConnectionError,
     } =
       await supabase
         .from(
@@ -559,17 +630,23 @@ export async function GET(
       );
     }
 
-    let supabaseError = null;
+    let supabaseError =
+      null;
 
-    if (existingConnection) {
+    if (
+      existingConnection
+    ) {
       const {
-        error: updateError,
+        error:
+          updateError,
       } =
         await supabase
           .from(
             "instagram_connections",
           )
-          .update(connection)
+          .update(
+            connection,
+          )
           .eq(
             "id",
             existingConnection.id,
@@ -583,13 +660,16 @@ export async function GET(
         updateError;
     } else {
       const {
-        error: insertError,
+        error:
+          insertError,
       } =
         await supabase
           .from(
             "instagram_connections",
           )
-          .insert(connection);
+          .insert(
+            connection,
+          );
 
       supabaseError =
         insertError;
