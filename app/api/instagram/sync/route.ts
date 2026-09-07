@@ -80,32 +80,45 @@ function extractHashtags(caption?: string) {
   const matches =
     caption.match(/#[\p{L}\p{N}_]+/gu);
 
-  if (!matches || matches.length === 0) {
+  if (
+    !matches ||
+    matches.length === 0
+  ) {
     return null;
   }
 
   return matches.join(" ");
 }
 
-function getDatePosted(timestamp?: string) {
+function getDatePosted(
+  timestamp?: string,
+) {
   if (!timestamp) {
     return null;
   }
 
-  const date = new Date(timestamp);
+  const date =
+    new Date(timestamp);
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
     return null;
   }
 
-  return date.toISOString().slice(0, 10);
+  return date
+    .toISOString()
+    .slice(0, 10);
 }
 
 async function fetchInstagramMedia(
   instagramUserId: string,
   accessToken: string,
 ) {
-  const allMedia: InstagramMedia[] = [];
+  const allMedia:
+    InstagramMedia[] = [];
 
   const fields = [
     "id",
@@ -120,7 +133,9 @@ async function fetchInstagramMedia(
     "comments_count",
   ].join(",");
 
-  let nextUrl: string | null =
+  let nextUrl:
+    | string
+    | null =
     `https://graph.facebook.com/${GRAPH_VERSION}/${instagramUserId}/media` +
     `?fields=${encodeURIComponent(fields)}` +
     `&limit=100` +
@@ -128,16 +143,26 @@ async function fetchInstagramMedia(
 
   let pageCount = 0;
 
-  while (nextUrl && pageCount < 10) {
-    const response = await fetch(nextUrl, {
-      method: "GET",
-      cache: "no-store",
-    });
+  while (
+    nextUrl &&
+    pageCount < 10
+  ) {
+    const response =
+      await fetch(
+        nextUrl,
+        {
+          method: "GET",
+          cache: "no-store",
+        },
+      );
 
     const data =
       (await response.json()) as InstagramMediaResponse;
 
-    if (!response.ok || data.error) {
+    if (
+      !response.ok ||
+      data.error
+    ) {
       console.error(
         "INSTAGRAM MEDIA FETCH ERROR:",
         data,
@@ -149,11 +174,19 @@ async function fetchInstagramMedia(
       );
     }
 
-    if (Array.isArray(data.data)) {
-      allMedia.push(...data.data);
+    if (
+      Array.isArray(
+        data.data,
+      )
+    ) {
+      allMedia.push(
+        ...data.data,
+      );
     }
 
-    nextUrl = data.paging?.next || null;
+    nextUrl =
+      data.paging?.next ||
+      null;
 
     pageCount += 1;
   }
@@ -165,17 +198,6 @@ async function fetchReelInsights(
   mediaId: string,
   accessToken: string,
 ): Promise<ReelInsights> {
-  /*
-   * IMPORTANT:
-   * "plays" is NOT valid for the Graph API response
-   * we're currently getting.
-   *
-   * Meta explicitly returned these as valid:
-   * views
-   * reach
-   * shares
-   * saved
-   */
   const metrics = [
     "views",
     "reach",
@@ -188,15 +210,22 @@ async function fetchReelInsights(
     `?metric=${encodeURIComponent(metrics.join(","))}` +
     `&access_token=${encodeURIComponent(accessToken)}`;
 
-  const response = await fetch(insightsUrl, {
-    method: "GET",
-    cache: "no-store",
-  });
+  const response =
+    await fetch(
+      insightsUrl,
+      {
+        method: "GET",
+        cache: "no-store",
+      },
+    );
 
   const data =
     (await response.json()) as InsightResponse;
 
-  if (!response.ok || data.error) {
+  if (
+    !response.ok ||
+    data.error
+  ) {
     console.error(
       "INSTAGRAM INSIGHTS ERROR:",
       {
@@ -213,59 +242,64 @@ async function fetchReelInsights(
     };
   }
 
-  const result: ReelInsights = {
+  const result:
+    ReelInsights = {
     views: 0,
     reach: 0,
     shares: 0,
     saves: 0,
   };
 
-  for (const item of data.data ?? []) {
+  for (
+    const item of
+    data.data ?? []
+  ) {
     const value =
-      item.values?.[0]?.value ?? 0;
+      item.values?.[0]
+        ?.value ?? 0;
 
     switch (item.name) {
       case "views":
-        result.views = value;
+        result.views =
+          value;
         break;
 
       case "reach":
-        result.reach = value;
+        result.reach =
+          value;
         break;
 
       case "shares":
-        result.shares = value;
+        result.shares =
+          value;
         break;
 
       case "saved":
-        result.saves = value;
+        result.saves =
+          value;
         break;
     }
   }
 
-  console.log(
-    "INSTAGRAM INSIGHTS LOADED:",
-    {
-      mediaId,
-      views: result.views,
-      reach: result.reach,
-      shares: result.shares,
-      saves: result.saves,
-    },
-  );
-
   return result;
 }
 
-export async function POST(request: Request) {
+export async function POST(
+  request: Request,
+) {
   try {
     const supabaseUrl =
-      process.env.NEXT_PUBLIC_SUPABASE_URL;
+      process.env
+        .NEXT_PUBLIC_SUPABASE_URL;
 
     const serviceRoleKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY;
+      process.env
+        .SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!supabaseUrl || !serviceRoleKey) {
+    if (
+      !supabaseUrl ||
+      !serviceRoleKey
+    ) {
       return NextResponse.json(
         {
           success: false,
@@ -278,34 +312,40 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = createClient(
-      supabaseUrl,
-      serviceRoleKey,
-      {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
+    const supabase =
+      createClient(
+        supabaseUrl,
+        serviceRoleKey,
+        {
+          auth: {
+            persistSession:
+              false,
+            autoRefreshToken:
+              false,
+          },
         },
-      },
-    );
+      );
 
-    /*
-     * AUTH
-     * Verify the logged-in CreatorOS user from the bearer token.
-     */
     const authorizationHeader =
-      request.headers.get("authorization");
+      request.headers.get(
+        "authorization",
+      );
 
     const accessToken =
-      authorizationHeader?.startsWith("Bearer ")
-        ? authorizationHeader.slice(7).trim()
+      authorizationHeader?.startsWith(
+        "Bearer ",
+      )
+        ? authorizationHeader
+            .slice(7)
+            .trim()
         : null;
 
     if (!accessToken) {
       return NextResponse.json(
         {
           success: false,
-          error: "You must be logged in to sync Instagram.",
+          error:
+            "You must be logged in to sync Instagram.",
         },
         {
           status: 401,
@@ -316,9 +356,10 @@ export async function POST(request: Request) {
     const {
       data: userData,
       error: userError,
-    } = await supabase.auth.getUser(
-      accessToken,
-    );
+    } =
+      await supabase.auth.getUser(
+        accessToken,
+      );
 
     if (
       userError ||
@@ -344,32 +385,35 @@ export async function POST(request: Request) {
     const userId =
       userData.user.id;
 
-    /*
-     * STEP 1
-     * Load Instagram connection.
-     */
     const {
       data: connection,
-      error: connectionError,
-    } = await supabase
-      .from("instagram_connections")
-      .select(
-        `
-        id,
-        instagram_user_id,
-        username,
-        access_token
-        `,
-      )
-      .eq(
-        "user_id",
-        userId,
-      )
-      .order("created_at", {
-        ascending: false,
-      })
-      .limit(1)
-      .maybeSingle();
+      error:
+        connectionError,
+    } =
+      await supabase
+        .from(
+          "instagram_connections",
+        )
+        .select(
+          `
+          id,
+          instagram_user_id,
+          username,
+          access_token
+          `,
+        )
+        .eq(
+          "user_id",
+          userId,
+        )
+        .order(
+          "created_at",
+          {
+            ascending: false,
+          },
+        )
+        .limit(1)
+        .maybeSingle();
 
     if (connectionError) {
       console.error(
@@ -418,43 +462,45 @@ export async function POST(request: Request) {
       );
     }
 
-    /*
-     * STEP 2
-     * Fetch Instagram media.
-     */
     const media =
       await fetchInstagramMedia(
         connection.instagram_user_id,
         connection.access_token,
       );
 
-    const videos = media.filter(
-      (item) => {
-        const mediaType =
-          item.media_type?.toUpperCase();
+    const videos =
+      media.filter(
+        (item) => {
+          const mediaType =
+            item.media_type?.toUpperCase();
 
-        const productType =
-          item.media_product_type?.toUpperCase();
+          const productType =
+            item.media_product_type?.toUpperCase();
 
-        return (
-          mediaType === "VIDEO" ||
-          productType === "REELS" ||
-          productType === "REEL"
-        );
-      },
-    );
+          return (
+            mediaType ===
+              "VIDEO" ||
+            productType ===
+              "REELS" ||
+            productType ===
+              "REEL"
+          );
+        },
+      );
 
     let inserted = 0;
     let updated = 0;
     let skipped = 0;
-    let insightsLoaded = 0;
+    let insightsLoaded =
+      0;
 
-    /*
-     * STEP 3
-     * Sync each Instagram video/Reel.
-     */
-    for (const video of videos) {
-      if (!video.permalink) {
+    for (
+      const video of
+      videos
+    ) {
+      if (
+        !video.permalink
+      ) {
         skipped += 1;
         continue;
       }
@@ -465,10 +511,6 @@ export async function POST(request: Request) {
           connection.access_token,
         );
 
-      /*
-       * Count insight response as loaded
-       * when Meta gave us any non-zero metric.
-       */
       if (
         insights.views > 0 ||
         insights.reach > 0 ||
@@ -479,21 +521,24 @@ export async function POST(request: Request) {
       }
 
       const {
-        data: existingVideo,
-        error: existingError,
-      } = await supabase
-        .from("videos")
-        .select("id")
-        .eq(
-          "user_id",
-          userId,
-        )
-        .eq(
-          "post_url",
-          video.permalink,
-        )
-        .limit(1)
-        .maybeSingle();
+        data:
+          existingVideo,
+        error:
+          existingError,
+      } =
+        await supabase
+          .from("videos")
+          .select("id")
+          .eq(
+            "user_id",
+            userId,
+          )
+          .eq(
+            "post_url",
+            video.permalink,
+          )
+          .limit(1)
+          .maybeSingle();
 
       if (existingError) {
         console.error(
@@ -506,7 +551,11 @@ export async function POST(request: Request) {
       }
 
       const syncedFields = {
-        platform: "Instagram",
+        instagram_media_id:
+          video.id,
+
+        platform:
+          "Instagram",
 
         views:
           insights.views,
@@ -530,7 +579,8 @@ export async function POST(request: Request) {
           insights.saves,
 
         caption:
-          video.caption || null,
+          video.caption ||
+          null,
 
         hashtags:
           extractHashtags(
@@ -551,36 +601,46 @@ export async function POST(request: Request) {
             : "Video",
 
         video_url:
-          video.media_url || null,
+          video.media_url ||
+          null,
 
         thumbnail_url:
-          video.thumbnail_url || null,
+          video.thumbnail_url ||
+          null,
 
         post_url:
           video.permalink,
 
-        status: "Posted",
+        status:
+          "Posted",
       };
 
-      /*
-       * UPDATE EXISTING VIDEO
-       */
-      if (existingVideo) {
+      if (
+        existingVideo
+      ) {
         const {
-          error: updateError,
-        } = await supabase
-          .from("videos")
-          .update(syncedFields)
-          .eq(
-            "id",
-            existingVideo.id,
-          )
-          .eq(
-            "user_id",
-            userId,
-          );
+          error:
+            updateError,
+        } =
+          await supabase
+            .from(
+              "videos",
+            )
+            .update(
+              syncedFields,
+            )
+            .eq(
+              "id",
+              existingVideo.id,
+            )
+            .eq(
+              "user_id",
+              userId,
+            );
 
-        if (updateError) {
+        if (
+          updateError
+        ) {
           console.error(
             "INSTAGRAM VIDEO UPDATE ERROR:",
             {
@@ -599,12 +659,12 @@ export async function POST(request: Request) {
         continue;
       }
 
-      /*
-       * INSERT NEW VIDEO
-       */
       const newVideo = {
         user_id:
           userId,
+
+        instagram_media_id:
+          video.id,
 
         title:
           createTitle(
@@ -635,28 +695,34 @@ export async function POST(request: Request) {
         saves:
           insights.saves,
 
-        followers_gained: 0,
+        followers_gained:
+          0,
 
         date_posted:
           getDatePosted(
             video.timestamp,
           ),
 
-        video_length: null,
+        video_length:
+          null,
 
-        hook: null,
+        hook:
+          null,
 
         caption:
-          video.caption || null,
+          video.caption ||
+          null,
 
         hashtags:
           extractHashtags(
             video.caption,
           ),
 
-        sound: null,
+        sound:
+          null,
 
-        topic: null,
+        topic:
+          null,
 
         content_type:
           video.media_product_type ===
@@ -666,33 +732,44 @@ export async function POST(request: Request) {
             ? "Reel"
             : "Video",
 
-        cta: null,
+        cta:
+          null,
 
         video_url:
-          video.media_url || null,
+          video.media_url ||
+          null,
 
-        notes: null,
+        notes:
+          null,
 
-        scheduled_date: null,
+        scheduled_date:
+          null,
 
-        scheduled_time: null,
+        scheduled_time:
+          null,
 
-        status: "Posted",
+        status:
+          "Posted",
 
         thumbnail_url:
-          video.thumbnail_url || null,
+          video.thumbnail_url ||
+          null,
 
         post_url:
           video.permalink,
       };
 
       const {
-        error: insertError,
-      } = await supabase
-        .from("videos")
-        .insert(newVideo);
+        error:
+          insertError,
+      } =
+        await supabase
+          .from("videos")
+          .insert(newVideo);
 
-      if (insertError) {
+      if (
+        insertError
+      ) {
         console.error(
           "INSTAGRAM VIDEO INSERT ERROR:",
           {
@@ -732,26 +809,28 @@ export async function POST(request: Request) {
       },
     );
 
-    return NextResponse.json({
-      success: true,
+    return NextResponse.json(
+      {
+        success: true,
 
-      username:
-        connection.username,
+        username:
+          connection.username,
 
-      totalMedia:
-        media.length,
+        totalMedia:
+          media.length,
 
-      videosFound:
-        videos.length,
+        videosFound:
+          videos.length,
 
-      insightsLoaded,
+        insightsLoaded,
 
-      inserted,
+        inserted,
 
-      updated,
+        updated,
 
-      skipped,
-    });
+        skipped,
+      },
+    );
   } catch (error) {
     console.error(
       "INSTAGRAM SYNC FAILED:",
@@ -763,7 +842,8 @@ export async function POST(request: Request) {
         success: false,
 
         error:
-          error instanceof Error
+          error instanceof
+          Error
             ? error.message
             : "Instagram sync failed.",
       },
