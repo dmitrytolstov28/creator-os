@@ -212,6 +212,56 @@ export default function SettingsPage() {
     void loadCreatorProfile();
 
     loadInterfacePreferences();
+
+    /*
+     * After Meta finishes connecting Instagram, the OAuth callback
+     * redirects back to Settings with ?instagram=connected.
+     *
+     * Automatically run the existing authenticated Instagram sync
+     * so a new user does not have to press "Sync Instagram" manually.
+     *
+     * Remove the success query parameters before starting the sync.
+     * This also prevents React Strict Mode in development from
+     * accidentally triggering the sync twice.
+     */
+    const searchParams =
+      new URLSearchParams(
+        window.location.search,
+      );
+
+    const instagramStatus =
+      searchParams.get(
+        "instagram",
+      );
+
+    if (
+      instagramStatus ===
+      "connected"
+    ) {
+      searchParams.delete(
+        "instagram",
+      );
+
+      searchParams.delete(
+        "username",
+      );
+
+      const remainingQuery =
+        searchParams.toString();
+
+      const cleanUrl =
+        `${window.location.pathname}` +
+        `${remainingQuery ? `?${remainingQuery}` : ""}` +
+        `${window.location.hash}`;
+
+      window.history.replaceState(
+        {},
+        "",
+        cleanUrl,
+      );
+
+      void syncInstagram();
+    }
   }, []);
 
   function applyInterfacePreferences(
