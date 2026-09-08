@@ -152,6 +152,12 @@ export default function SettingsPage() {
     useState(false);
 
   const [
+    disconnectingInstagram,
+    setDisconnectingInstagram,
+  ] =
+    useState(false);
+
+  const [
     instagramError,
     setInstagramError,
   ] =
@@ -822,6 +828,154 @@ export default function SettingsPage() {
     }
   }
 
+
+  async function disconnectInstagram() {
+    if (
+      disconnectingInstagram
+    ) {
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        "Disconnect Instagram from this CreatorOS account? Your synced videos will stay in CreatorOS.",
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDisconnectingInstagram(
+        true,
+      );
+
+      const {
+        data: sessionData,
+        error: sessionError,
+      } =
+        await supabase.auth.getSession();
+
+      if (sessionError) {
+        throw new Error(
+          "Unable to verify your login session.",
+        );
+      }
+
+      let accessToken =
+        sessionData.session
+          ?.access_token ??
+        null;
+
+      const expiresAt =
+        sessionData.session
+          ?.expires_at ??
+        null;
+
+      const nowSeconds =
+        Math.floor(
+          Date.now() / 1000,
+        );
+
+      if (
+        !accessToken ||
+        !expiresAt ||
+        expiresAt <=
+          nowSeconds + 60
+      ) {
+        const {
+          data:
+            refreshedSessionData,
+          error: refreshError,
+        } =
+          await supabase.auth.refreshSession();
+
+        if (refreshError) {
+          throw new Error(
+            "Your login session has expired. Please log in again.",
+          );
+        }
+
+        accessToken =
+          refreshedSessionData
+            .session
+            ?.access_token ??
+          null;
+      }
+
+      if (!accessToken) {
+        throw new Error(
+          "Your login session has expired. Please log in again.",
+        );
+      }
+
+      const response =
+        await fetch(
+          "/api/instagram/disconnect",
+          {
+            method:
+              "POST",
+
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
+            },
+          },
+        );
+
+      const data =
+        (await response.json()) as {
+          success?: boolean;
+          error?: string;
+        };
+
+      if (
+        !response.ok ||
+        !data.success
+      ) {
+        throw new Error(
+          data.error ||
+            "Could not disconnect Instagram.",
+        );
+      }
+
+      setInstagramConnection(
+        null,
+      );
+
+      setInstagramError(
+        null,
+      );
+
+      toast.success(
+        "Instagram disconnected",
+        {
+          description:
+            "Your synced videos were kept in CreatorOS.",
+        },
+      );
+    } catch (error) {
+      console.error(
+        "Instagram disconnect failed:",
+        error,
+      );
+
+      toast.error(
+        "Instagram disconnect failed",
+        {
+          description:
+            error instanceof Error
+              ? error.message
+              : "Something went wrong.",
+        },
+      );
+    } finally {
+      setDisconnectingInstagram(
+        false,
+      );
+    }
+  }
+
   return (
     <AppShell>
       <div className="space-y-10">
@@ -934,14 +1088,16 @@ export default function SettingsPage() {
               )}
 
               {instagramConnection ? (
-                <div className="mt-6 grid grid-cols-2 gap-3">
+                <div className="mt-6 grid gap-3 sm:grid-cols-3">
                   <button
                     type="button"
                     onClick={
                       syncInstagram
                     }
                     disabled={
-                      syncingInstagram
+                      syncingInstagram ||
+                      connectingInstagram ||
+                      disconnectingInstagram
                     }
                     className="flex items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 py-3 font-semibold text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
                   >
@@ -956,7 +1112,7 @@ export default function SettingsPage() {
 
                     {syncingInstagram
                       ? "Syncing..."
-                      : "Sync Instagram"}
+                      : "Sync"}
                   </button>
 
                   <button
@@ -965,7 +1121,9 @@ export default function SettingsPage() {
                       connectInstagram
                     }
                     disabled={
-                      connectingInstagram
+                      connectingInstagram ||
+                      syncingInstagram ||
+                      disconnectingInstagram
                     }
                     className="flex items-center justify-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-400/[0.06] px-4 py-3 font-semibold text-emerald-300 transition hover:border-emerald-400/60 hover:bg-emerald-400/[0.1] disabled:cursor-not-allowed disabled:opacity-60"
                   >
@@ -976,6 +1134,27 @@ export default function SettingsPage() {
                     {connectingInstagram
                       ? "Connecting..."
                       : "Reconnect"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={
+                      disconnectInstagram
+                    }
+                    disabled={
+                      disconnectingInstagram ||
+                      syncingInstagram ||
+                      connectingInstagram
+                    }
+                    className="flex items-center justify-center gap-2 rounded-xl border border-red-400/25 bg-red-400/[0.05] px-4 py-3 font-semibold text-red-300 transition hover:border-red-400/50 hover:bg-red-400/[0.1] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <X
+                      size={18}
+                    />
+
+                    {disconnectingInstagram
+                      ? "Disconnecting..."
+                      : "Disconnect"}
                   </button>
                 </div>
               ) : (
