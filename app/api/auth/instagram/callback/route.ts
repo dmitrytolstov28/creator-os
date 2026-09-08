@@ -714,11 +714,16 @@ export async function GET(
       },
     );
 
+    const syncOnceToken =
+      crypto.randomUUID();
+
     return NextResponse.redirect(
       new URL(
         `/settings?instagram=connected&username=${encodeURIComponent(
           instagramData.username ||
             "",
+        )}&sync_once=${encodeURIComponent(
+          syncOnceToken,
         )}`,
         request.url,
       ),

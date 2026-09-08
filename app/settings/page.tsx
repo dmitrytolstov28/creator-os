@@ -220,15 +220,12 @@ export default function SettingsPage() {
     loadInterfacePreferences();
 
     /*
-     * After Meta finishes connecting Instagram, the OAuth callback
-     * redirects back to Settings with ?instagram=connected.
+     * Auto-sync only once after a fresh successful Instagram OAuth.
      *
-     * Automatically run the existing authenticated Instagram sync
-     * so a new user does not have to press "Sync Instagram" manually.
-     *
-     * Remove the success query parameters before starting the sync.
-     * This also prevents React Strict Mode in development from
-     * accidentally triggering the sync twice.
+     * The callback now includes a one-time sync token. We store that
+     * token in sessionStorage before starting the sync, then remove
+     * the OAuth query parameters from the URL. Normal visits to
+     * /settings will never trigger an automatic sync.
      */
     const searchParams =
       new URLSearchParams(
@@ -240,16 +237,34 @@ export default function SettingsPage() {
         "instagram",
       );
 
+    const syncOnceToken =
+      searchParams.get(
+        "sync_once",
+      );
+
     if (
       instagramStatus ===
-      "connected"
+        "connected" &&
+      syncOnceToken
     ) {
+      const storageKey =
+        `creatoros-instagram-sync-once:${syncOnceToken}`;
+
+      const alreadyProcessed =
+        window.sessionStorage.getItem(
+          storageKey,
+        ) === "1";
+
       searchParams.delete(
         "instagram",
       );
 
       searchParams.delete(
         "username",
+      );
+
+      searchParams.delete(
+        "sync_once",
       );
 
       const remainingQuery =
@@ -266,7 +281,14 @@ export default function SettingsPage() {
         cleanUrl,
       );
 
-      void syncInstagram();
+      if (!alreadyProcessed) {
+        window.sessionStorage.setItem(
+          storageKey,
+          "1",
+        );
+
+        void syncInstagram();
+      }
     }
   }, []);
 
